@@ -12,15 +12,12 @@ This agent feches cryptocurrency price in USD any language using together ai api
 2.  
     cd chat
 
-3. python3 -m venv venv
-4. 
+
+
+3. pip install -r requirements.txt
+
+4. create .env file in the project root directory and add the api key
 5. 
-   source venv/bin/activate
-
-6. pip install -r requirements.txt
-
-7. create .env file in the project root directory and add the api key
-8. 
    TOGETHER_API_KEY="*********************"
 
 ## Usage
