@@ -11,7 +11,7 @@ load_dotenv()
 client = Together(api_key = os.environ['TOGETHER_API_KEY'])
 # together.api_key = os.getenv("together_key")
 
-model = "meta-llama/Meta-Llama-3.1-8B-Instruct-lora"
+# model = "meta-llama/Meta-Llama-3.1-8B-Instruct-lora"
 
 
 class Agent:
@@ -31,12 +31,14 @@ class Agent:
 
     def execute(self):
         completion = self.client.chat.completions.create(
-            model="meta-llama/Meta-Llama-3.1-8B-Instruct-lora", messages=self.messages
+
+            model="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+            # model = model,
+            messages=self.messages
         )
         # Print raw output for debugging
         print("Agent response:", completion.choices[0].message.content)
         return completion.choices[0].message.content
-
 # Define system prompt for the agent
 system_prompt = """
 You can ask me a question in any language, and I'll respond with the single word cryptocurrency name in English.
@@ -51,6 +53,7 @@ Available cryptocurrencies: bitcoin, ethereum, litecoin, etc.
 Go ahead and ask your question!
 """
 
+
 # Function to fetch crypto price
 def get_crypto_price(crypto_symbol):
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={crypto_symbol}&vs_currencies=usd"
@@ -63,27 +66,19 @@ def get_crypto_price(crypto_symbol):
     return None  # Return None if price or crypto not found
 
 # Initialize the agent
-cryptonite = Agent(client=client, system=system_prompt)
+Agent = Agent(client=client, system=system_prompt)
 
-# Ask for user input
-query = input("Ask me about a cryptocurrency: ")
+while True:
+    # user input
+    query = input("Ask me about a cryptocurrency: ")
 
-# Get the result from the agent
-crypto_name = cryptonite(query)
+    # exit condition
+    if query.lower() in ["quit", "exit"]:
+        break  # Exit the loop if the user types "quit" or "exit"
 
-# Remove any extraneous characters (e.g., quotes) around the response
-crypto_name = crypto_name.strip().strip("'\"").strip()
-# Try to get the last word from the response which should be the cryptocurrency name
-match = re.search(r"(\w+)$", crypto_name)
-if match:
-    crypto_name = match.group(1)
 
-# Check if a cryptocurrency was extracted and fetch its price
-if crypto_name:
-    price = get_crypto_price(crypto_name)
-    if price:
-        print(f"The current price of {crypto_name.capitalize()} is ${price} USD.")
-    else:
-        print(f"Could not retrieve the price for '{crypto_name}'. Please try with another cryptocurrency.")
-else:
-    print("Could not determine a cryptocurrency from the input.")
+    result = Agent(query)
+    print(result)
+
+    res = get_crypto_price(result)
+    print(f"The price of {result} is {res}USD")
