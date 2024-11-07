@@ -10,7 +10,7 @@ This agent feches cryptocurrency price in USD any language using together ai api
 
 1.  git clone https://github.com/Racasekumar/cryptonite.git
 2.  
-    cd chat
+    cd directory
 
 
 
