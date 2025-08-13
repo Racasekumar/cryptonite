@@ -1,3 +1,18 @@
-together
-googletrans==4.0.0-rc1
-python-dotenv==1.0.1
+# LiveKit Interview Agent Requirements
+livekit-agents>=1.2.5
+livekit-api>=1.0.0
+livekit-plugins-openai>=1.2.0
+livekit-plugins-deepgram>=1.2.0
+livekit-plugins-cartesia>=1.2.5
+livekit-plugins-silero>=1.2.0
+
+# LangChain and LangGraph dependencies
+langchain>=0.3.27
+langchain-openai>=0.3.29
+langchain-core>=0.3.74
+langgraph>=0.6.4
+
+# Environment and utilities
+python-dotenv>=1.1.1
+pydantic>=2.0.0
+ipython==9.4.0
