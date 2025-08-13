@@ -1,0 +1,9 @@
+{
+    "questions": [
+    "What is the primary difference between supervised and unsupervised learning?",
+    "In machine learning, what is a 'feature'?",
+    "Explain the purpose of a validation set.",
+    "What does the term 'regularization' mean in the context of modeling?",
+    "How is a median different from a mean, and when would you use one over the other? ",
+    "What is a 'support vector machine' (SVM) and how does it work?"]
+}
