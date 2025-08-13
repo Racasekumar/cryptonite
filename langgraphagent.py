@@ -8,11 +8,13 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
+
 
 class InterviewState(TypedDict):
     """
@@ -23,6 +25,7 @@ class InterviewState(TypedDict):
     - interview_complete: A boolean flag to signal the end of the interview.
     - waiting_for_user: A flag to indicate when we need user input.
     """
+
     messages: Annotated[List[BaseMessage], operator.add]
     questions: list
     current_question_index: int
@@ -38,14 +41,11 @@ def ask_question_node(state: InterviewState):
     """Asks the next main interview question."""
     questions = state["questions"]
     index = state["current_question_index"]
-    
+
     if index < len(questions):
         question = questions[index]
         print(f"\nAI Agent: {question}")
-        return {
-            "messages": [AIMessage(content=question)],
-            "waiting_for_user": True
-        }
+        return {"messages": [AIMessage(content=question)], "waiting_for_user": True}
     else:
         # Signal that the interview is complete
         return {"interview_complete": True}
@@ -64,13 +64,13 @@ def decide_followup_node(state: InterviewState):
         
         Chat History:
         {chat_history}
-        """
+        """,
     )
     chain = prompt | llm
-    
+
     # Pass only the last few messages to keep the context focused
     response = chain.invoke({"chat_history": state["messages"][-4:]})
-    
+
     # Return the decision and update state accordingly
     decision = response.content.strip().lower()
     if "follow_up" in decision:
@@ -78,7 +78,7 @@ def decide_followup_node(state: InterviewState):
     else:
         return {
             "current_question_index": state["current_question_index"] + 1,
-            "waiting_for_user": False
+            "waiting_for_user": False,
         }
 
 
@@ -93,22 +93,21 @@ def generate_followup_node(state: InterviewState):
         Chat History: {chat_history}
         
         Follow-up Question:
-        """
+        """,
     )
     chain = prompt | llm
-    
+
     # Get the most recent main question
     main_question = state["questions"][state["current_question_index"]]
-    
-    response = chain.invoke({
-        "chat_history": state["messages"],
-        "main_question": main_question
-    })
+
+    response = chain.invoke(
+        {"chat_history": state["messages"], "main_question": main_question}
+    )
 
     print(f"\nAI Agent (Follow-up): {response.content.strip()}")
     return {
         "messages": [AIMessage(content=response.content.strip())],
-        "waiting_for_user": True
+        "waiting_for_user": True,
     }
 
 
@@ -120,7 +119,7 @@ def end_interview_node(state: InterviewState):
         
         Chat History:
         {chat_history}
-        """
+        """,
     )
     chain = prompt | llm
     response = chain.invoke({"chat_history": state["messages"]})
@@ -133,13 +132,13 @@ def route_after_decision(state: InterviewState):
     # Check if interview is complete
     if state.get("interview_complete", False):
         return "end_interview"
-    
+
     # Check if we moved to next question (index was updated)
     if not state.get("waiting_for_user", False):
         # If current_question_index was updated, we go to next question
         # If not, we generate follow-up
         return "ask_question"
-    
+
     return "generate_followup"
 
 
@@ -175,7 +174,7 @@ def route_after_decision(state: InterviewState):
 
 
 workflow = StateGraph(InterviewState)
-    
+
 workflow.add_node("ask_question", ask_question_node)
 workflow.add_node("decide_followup", decide_followup_node)
 workflow.add_node("generate_followup", generate_followup_node)
@@ -187,12 +186,19 @@ workflow.set_entry_point("ask_question")
 # Define the edges and conditional routing
 workflow.add_conditional_edges(
     "ask_question",
-    lambda state: "end_interview" if state.get("interview_complete") else "decide_followup"
+    lambda state: (
+        "end_interview" if state.get("interview_complete") else "decide_followup"
+    ),
 )
 
 workflow.add_conditional_edges(
     "decide_followup",
-        lambda state: "ask_question" if state["current_question_index"] != state.get("original_index", state["current_question_index"]) else "generate_followup"
+    lambda state: (
+        "ask_question"
+        if state["current_question_index"]
+        != state.get("original_index", state["current_question_index"])
+        else "generate_followup"
+    ),
 )
 
 workflow.add_edge("generate_followup", "decide_followup")
@@ -205,8 +211,8 @@ app = workflow.compile()
 # print(Image(app.get_graph().draw_mermaid_png()))
 
 
-
 # This part simulates the user interaction and runs the agent.
+
 
 # Simplified approach - run the interview step by step
 def run_interview():
@@ -216,12 +222,12 @@ def run_interview():
         "questions": questions,
         "current_question_index": 0,
         "interview_complete": False,
-        "waiting_for_user": False
+        "waiting_for_user": False,
     }
-    
+
     print("--- AI Interview Agent Started ---")
     print("Type 'exit' to end the interview at any time.\n")
-    
+
     while not state.get("interview_complete", False):
         # If we're not waiting for user input, process the next step
         if not state.get("waiting_for_user", False):
@@ -237,31 +243,36 @@ def run_interview():
                 state["interview_complete"] = True
                 end_interview_node(state)
                 break
-        
+
         # Get user input
         if state.get("waiting_for_user", False):
             user_input = input("\nYou: ")
             if user_input.lower() == "exit":
                 print("--- Interview Ended ---")
                 break
-            
+
             # Add user message
             state["messages"].append(HumanMessage(content=user_input))
             state["waiting_for_user"] = False
-            
+
             # Decide if follow-up is needed
             decision_result = decide_followup_node(state)
-            
+
             # Check if we should move to next question
             if "current_question_index" in decision_result:
-                state["current_question_index"] = decision_result["current_question_index"]
+                state["current_question_index"] = decision_result[
+                    "current_question_index"
+                ]
             else:
                 # Generate follow-up
                 followup_result = generate_followup_node(state)
                 state["messages"].extend(followup_result["messages"])
-                state["waiting_for_user"] = followup_result.get("waiting_for_user", False)
-    
+                state["waiting_for_user"] = followup_result.get(
+                    "waiting_for_user", False
+                )
+
     print("\n--- Interview Completed ---")
+
 
 # Run the interview
 if __name__ == "__main__":
